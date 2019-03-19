@@ -1,0 +1,36 @@
+---
+# tasks file for docker
+- name: Adding docker repo
+  yum_repository:
+    name: docker
+    description: docker stable
+    baseurl: https://download.docker.com/linux/centos/7/x86_64/stable
+    gpgkey: https://download.docker.com/linux/centos/gpg
+    gpgcheck: yes
+- name: Enabling Docker Edge repo
+  ini_file:
+    dest: /etc/yum.repos.d/docer-ce.repo
+    section: 'docker-ce-edge'
+    option: enabled
+    value: 0
+- name: Installing docker
+  package: name=docker-ce state=installed
+- name: Enabling Docker
+  service: name=docker enabled=yes state=started
+  notify:
+  - docker details
+- name: Docker version
+  shell: docker -v | awk '{print $3}'| cut -f1 -d ','
+  register: docker_version
+  changed_when: False
+- name: Docker build
+  shell: docker -v | awk '{print $5}'
+  register: docker_build
+  changed_when: False
+- name: Configuring docker
+  blockinfile:
+    path: /etc/sysctl.d/docker.conf
+    block: |
+      net.bridge.bridge-nf-call-ip6tables = 1
+      net.bridge.bridge-nf-call-iptables = 1
+    create: True

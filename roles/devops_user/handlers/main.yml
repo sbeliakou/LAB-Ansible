@@ -1,0 +1,14 @@
+---
+# handlers file for devops_user
+- name: user details
+  copy: 
+    content: >
+      {
+        "User-NAME": "{{ new_user }}",
+        "UID": "{{ uid.stdout }}",
+        "GID": "{{ gid.stdout }}",
+        "User-HOME": "{{ new_user_home.stdout }}"
+      }
+    dest: /etc/ansible/facts.d/user.fact
+
+  become: yes

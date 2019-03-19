@@ -1,0 +1,4 @@
+---
+# vars file for devops_user
+new_user: devops
+new_user_pass: devops

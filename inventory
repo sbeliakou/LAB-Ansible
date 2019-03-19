@@ -1,0 +1,9 @@
+[all:vars]
+ansible_connection=paramiko
+ansible_user=root
+ansible_ssh_pass=vagrant
+
+[masters]
+master-1 ansible_host=192.168.56.15
+[workers]
+worker-1 ansible_host=192.168.56.20

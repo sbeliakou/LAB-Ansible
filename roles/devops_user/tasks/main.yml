@@ -1,0 +1,31 @@
+---
+# tasks file for devops_user
+- name: Creating user devops
+  user:
+    name: '{{ new_user }}'
+    password: "{{ '{{ new_user_pass }}' | password_hash('sha512', 'mysecretsalt') }}"
+    append: yes
+  notify:
+  - user details
+- name: UID
+  shell: 'id -u {{ new_user }}'
+  register: uid
+  changed_when: False
+- name: GID
+  shell: 'id -G {{ new_user }}'
+  register: gid
+  changed_when: False
+- name: User's home dir
+  shell: 'eval echo ~{{ new_user }}'
+  register: new_user_home
+  changed_when: False
+- name: Set authorized key taken from file
+  authorized_key:
+    user: devops
+    state: present
+    key: "{{ lookup('file', './devops.pem') }}"
+
+- name: Add devops to sudoers
+  lineinfile:
+    path: /etc/sudoers
+    line: '{{ new_user }} ALL=(ALL) NOPASSWD:ALL'

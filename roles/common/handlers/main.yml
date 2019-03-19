@@ -1,0 +1,12 @@
+---
+# handlers file for common
+- name: common details
+  copy: 
+    content: >
+      {
+        "SELINUX": "{{ selinux_state.stdout }}",
+        
+      }
+    dest: /etc/ansible/facts.d/common.fact
+
+  become: yes

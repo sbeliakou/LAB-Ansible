@@ -1,0 +1,49 @@
+---
+- hosts: all
+  pre_tasks:
+    - name: Create /etc/ansible/facts.d
+      file:
+        path: /etc/ansible/facts.d
+        state: directory
+      become: yes
+
+- name: Common
+  hosts: all
+  become: yes
+  roles:
+    - common
+
+- name: Create devops user
+  hosts: all
+  become: yes
+  roles:
+    - devops_user
+
+- name: Install docker
+  hosts: all
+  become: yes
+  roles:
+    - docker
+
+- name: Install k8s (for all)
+  hosts: all
+  become: yes
+  roles:
+    - k8s-base
+- name: Install k8s-master
+  hosts: masters
+  become: yes
+  roles:
+    - k8s-master
+
+- name: Install k8s-worker
+  hosts: workers
+  become: yes
+  roles:
+    - k8s-worker
+- hosts: all
+  post_tasks:
+    - name: delete joincommand
+      file:
+        state: absent
+        path: /vagrant/joincommand

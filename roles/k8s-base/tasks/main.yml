@@ -1,0 +1,32 @@
+---
+# tasks file for k8s-base
+- name: add Kubernetes' YUM repository
+  yum_repository:
+    name: Kubernetes
+    description: Kubernetes YUM repository
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
+    gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+    gpgcheck: yes
+- name: Installing k8s
+  package:
+    name:
+      - kubelet
+      - kubectl
+      - kubeadm
+    state: installed
+  notify:
+  - save k8s details
+
+- name: k8s Version
+  shell: kubelet --version | awk '{print $2}' | cut -c2-
+  register: k8s_version
+  changed_when: False
+
+- name: Enabling kubelet
+  service: name=kubelet enabled=yes state=started
+- name: Enabling ntpd
+  service: name=ntpd enabled=yes state=started
+
+- name: Sysctl --system
+  command: sysctl --system
+  changed_when: False

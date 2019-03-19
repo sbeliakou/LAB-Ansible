@@ -1,0 +1,11 @@
+---
+# handlers file for k8s-worker
+- name: worker join details
+  copy: 
+    content: >
+      {
+        "worker_join_date": "{{ ansible_date_time.iso8601 }}"
+      }
+    dest: /etc/ansible/facts.d/k8s-worker.fact
+
+  become: yes

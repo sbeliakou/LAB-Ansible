@@ -1,0 +1,32 @@
+---
+# tasks file for common
+- name: Remove swapfile from /etc/fstab
+  mount:
+    name: swap
+    fstype: swap
+    state: absent
+- name: Disable swap
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+- name: Disabling SELINUX
+  shell: |
+    sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+  args:
+    warn: False
+  changed_when: False
+- name: Installing ntp
+  package:
+    name:
+      - ntp
+    state: installed
+  notify:
+  - common details
+
+- name: SELINUX state
+  shell: cat /etc/selinux/config | grep -v -E "#|^$" | grep -w -i 'SELINUX=*'| cut -d '=' -f2
+  register: selinux_state
+  changed_when: False
+- name: Swap size
+  shell: cat /proc/meminfo | grep SwapTotal| cut -f14- -d ' '| awk '{print $1}'
+  register: swap_size
+  changed_when: False

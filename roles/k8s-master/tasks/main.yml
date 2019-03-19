@@ -1,0 +1,38 @@
+---
+# tasks file for k8s-master
+- name: kube init
+  command: kubeadm init --pod-network-cidr 10.244.0.0/16 --apiserver-advertise-address 192.168.56.15
+  register: output
+  args:
+    creates: /etc/kubernetes/manifests/kube-controller-manager.yaml
+  failed_when: "'Failed' in output.stdout"
+  notify:
+  - cluster details
+- name: Get cluster token
+  shell: kubeadm token list | awk NR==2'{print $1}' 
+  register: cluster_token
+  changed_when: False
+- name: Setup kubectl
+  file:
+    path: '{{ ansible_user_dir }}/.kube'
+    state: directory
+- name: adding config
+  copy:
+    src: '/etc/kubernetes/admin.conf'
+    dest: '{{ ansible_user_dir }}/.kube/config'
+    remote_src: yes
+- name: create joincommand
+  shell: |
+    kubeadm token create --print-join-command > /vagrant/joincommand
+  args:
+    warn: False
+  changed_when: False
+- name: Apply flannel
+  command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
+  changed_when: False
+- name: w8
+  wait_for: timeout=10 
+- name: Patching flannel
+  shell: |
+    kubectl patch daemonsets kube-flannel-ds-amd64 -n kube-system --patch='{"spec":{"template":{"spec":{"containers":[{"name": "kube-flannel", "args": ["--ip-masq", "--kube-subnet-mgr", "--iface='enp0s8'"]}]}}}}'
+  changed_when: False

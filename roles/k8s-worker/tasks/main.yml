@@ -1,0 +1,10 @@
+---
+# tasks file for k8s-worker
+- name: Join worker
+  command: bash /vagrant/joincommand
+  register: output
+  args:
+    creates: /etc/kubernetes/kubelet.conf
+  failed_when: "'Failed' in output.stdout"
+  notify:
+  - worker join details
