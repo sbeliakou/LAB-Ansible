@@ -40,7 +40,7 @@ C) Develop following Roles:
 
 **- common** (provides common system updates/configuration/so on)
 **roles/common/tasks/main.yml:**
-```
+```yaml
 ---
 # tasks file for common
 - name: Remove swapfile from /etc/fstab
@@ -48,15 +48,18 @@ C) Develop following Roles:
     name: swap
     fstype: swap
     state: absent
+    
 - name: Disable swap
   command: swapoff -a
   when: ansible_swaptotal_mb > 0
+  
 - name: Disabling SELINUX
   shell: |
     sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
   args:
     warn: False
   changed_when: False
+  
 - name: Installing ntp
   package:
     name:
@@ -69,6 +72,7 @@ C) Develop following Roles:
   shell: cat /etc/selinux/config | grep -v -E "#|^$" | grep -w -i 'SELINUX=*'| cut -d '=' -f2
   register: selinux_state
   changed_when: False
+  
 - name: Swap size
   shell: cat /proc/meminfo | grep SwapTotal| cut -f14- -d ' '| awk '{print $1}'
   register: swap_size
@@ -77,7 +81,7 @@ C) Develop following Roles:
 **- devops_user** (creates “devops:devops” user, updates authorized keys file, configures
     sudoers, disables requiretty setting for this user)
 **roles/devops_user/tasks/main.yml:**
-```
+```yaml
 ---
 # tasks file for devops_user
 - name: Creating user devops
@@ -87,18 +91,22 @@ C) Develop following Roles:
     append: yes
   notify:
   - user details
+  
 - name: UID
   shell: 'id -u {{ new_user }}'
   register: uid
   changed_when: False
+  
 - name: GID
   shell: 'id -G {{ new_user }}'
   register: gid
   changed_when: False
+  
 - name: User's home dir
   shell: 'eval echo ~{{ new_user }}'
   register: new_user_home
   changed_when: False
+  
 - name: Set authorized key taken from file
   authorized_key:
     user: devops
@@ -112,7 +120,7 @@ C) Develop following Roles:
 ```
 **- docker** (base installation and configuration)
 **roles/docker/tasks/main.yml:**
-```
+```yaml
 ---
 # tasks file for docker
 - name: Adding docker repo
@@ -122,26 +130,31 @@ C) Develop following Roles:
     baseurl: https://download.docker.com/linux/centos/7/x86_64/stable
     gpgkey: https://download.docker.com/linux/centos/gpg
     gpgcheck: yes
+    
 - name: Enabling Docker Edge repo
   ini_file:
     dest: /etc/yum.repos.d/docer-ce.repo
     section: 'docker-ce-edge'
     option: enabled
     value: 0
+    
 - name: Installing docker
   package: name=docker-ce state=installed
 - name: Enabling Docker
   service: name=docker enabled=yes state=started
   notify:
   - docker details
+  
 - name: Docker version
   shell: docker -v | awk '{print $3}'| cut -f1 -d ','
   register: docker_version
   changed_when: False
+  
 - name: Docker build
   shell: docker -v | awk '{print $5}'
   register: docker_build
   changed_when: False
+  
 - name: Configuring docker
   blockinfile:
     path: /etc/sysctl.d/docker.conf
@@ -152,7 +165,7 @@ C) Develop following Roles:
 ```
 **- k8s-base** (installs kub packages, depends on docker role with systemd cgroup driver)
 **roles/k8s-base/tasks/main.yml:**
-```
+```yaml
 ---
 # tasks file for k8s-base
 - name: add Kubernetes' YUM repository
@@ -162,6 +175,7 @@ C) Develop following Roles:
     baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64
     gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
     gpgcheck: yes
+    
 - name: Installing k8s
   package:
     name:
@@ -179,6 +193,7 @@ C) Develop following Roles:
 
 - name: Enabling kubelet
   service: name=kubelet enabled=yes state=started
+  
 - name: Enabling ntpd
   service: name=ntpd enabled=yes state=started
 
@@ -188,7 +203,7 @@ C) Develop following Roles:
 ```
 **- k8s-master**
 **roles/k8s-master/tasks/main.yml:**
-```
+```yaml
 ---
 # tasks file for k8s-master
 - name: kube init
@@ -199,30 +214,37 @@ C) Develop following Roles:
   failed_when: "'Failed' in output.stdout"
   notify:
   - cluster details
+  
 - name: Get cluster token
   shell: kubeadm token list | awk NR==2'{print $1}' 
   register: cluster_token
   changed_when: False
+  
 - name: Setup kubectl
   file:
     path: '{{ ansible_user_dir }}/.kube'
     state: directory
+    
 - name: adding config
   copy:
     src: '/etc/kubernetes/admin.conf'
     dest: '{{ ansible_user_dir }}/.kube/config'
     remote_src: yes
+    
 - name: create joincommand
   shell: |
     kubeadm token create --print-join-command > /vagrant/joincommand
   args:
     warn: False
   changed_when: False
+  
 - name: Apply flannel
   command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/bc79dd1505b0c8681ece4de4c0d86c5cd2643275/Documentation/kube-flannel.yml
   changed_when: False
+  
 - name: w8
   wait_for: timeout=10 
+  
 - name: Patching flannel
   shell: |
     kubectl patch daemonsets kube-flannel-ds-amd64 -n kube-system --patch='{"spec":{"template":{"spec":{"containers":[{"name": "kube-flannel", "args": ["--ip-masq", "--kube-subnet-mgr", "--iface='enp0s8'"]}]}}}}'
@@ -230,7 +252,7 @@ C) Develop following Roles:
 ```
 **- k8s-worker**
 **roles/k8s-worker/tasks/main.yml:**
-```
+```yaml
 ---
 # tasks file for k8s-worker
 - name: Join worker
@@ -245,7 +267,7 @@ C) Develop following Roles:
 D) Make sure that all necessary application state changes are being done with **_handlers_** on
 demand.
 **roles/common/handlers/main.yml:**
-```
+```yaml
 ---
 # handlers file for common
 - name: common details
@@ -260,7 +282,7 @@ demand.
   become: yes
 ```
 **roles/devops_user/handlers/main.yml:**
-```
+```yaml
 ---
 # handlers file for devops_user
 - name: user details
@@ -277,7 +299,7 @@ demand.
   become: yes
 ```
 **roles/docker/handlers/main.yml:**
-```
+```yaml
 ---
 # handlers file for docker
 - name: docker details
@@ -293,7 +315,7 @@ demand.
   become: yes
 ```
 **roles/k8s-base/handlers/main.yml:**
-```
+```yaml
 ---
 # handlers file for k8s-base
 - name: save k8s details
@@ -308,7 +330,7 @@ demand.
   become: yes
 ```
 **roles/k8s-master/handlers/main.yml:**
-```
+```yaml
 ---
 # handlers file for k8s-master
 - name: cluster details
@@ -323,7 +345,7 @@ demand.
   become: yes
 ```
 **roles/k8s-woker/handlers/main.yml:**
-```
+```yaml
 ---
 # handlers file for k8s-worker
 - name: worker join details
@@ -358,7 +380,7 @@ F) Develop **provision.yml** playbook:
 **-** Specify k8s cluster token in playbook, inventory (group vars, host vars), extra vars – try
     different.
 **playbook.yml**
-```
+```yaml
 ---
 - hosts: all
   pre_tasks:
@@ -391,6 +413,7 @@ F) Develop **provision.yml** playbook:
   become: yes
   roles:
     - k8s-base
+    
 - name: Install k8s-master
   hosts: masters
   become: yes
@@ -402,6 +425,7 @@ F) Develop **provision.yml** playbook:
   become: yes
   roles:
     - k8s-worker
+    
 - hosts: all
   post_tasks:
     - name: delete joincommand
