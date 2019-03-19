@@ -338,13 +338,21 @@ demand.
 ```
 
 E) All roles should leave facts about configured/provisioned software on the system (Verify
-system’s configuration with ad-hoc command – setup module - after provisioning)
+system’s configuration with ad-hoc command – setup module - after provisioning)\
+
 **run command**
+
 ![command](images/facts-run.png)
+
+
 **master facts**
+
 ![master](images/master.png)
+
 **worker facts**
+
 ![worker](images/worker.png)
+
 F) Develop **provision.yml** playbook:
 **-** Sections pre_tasks, tasks, roles, post_tasks
 **-** Specify k8s cluster token in playbook, inventory (group vars, host vars), extra vars – try
@@ -403,8 +411,11 @@ F) Develop **provision.yml** playbook:
 ```
 ### Provision results:
 **1st provision:**
+
 ![1st provision](images/1st_provision.png)
+
 **2nd provision:**
+
 ![2nd provision](images/2nd_provision.png)
 
 
